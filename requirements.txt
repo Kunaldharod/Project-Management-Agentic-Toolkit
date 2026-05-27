@@ -1,0 +1,30 @@
+# ═══════════════════════════════════════════════════════════════════════════════
+# Agentic PMBOK Toolkit — Requirements
+# Install: pip install -r requirements.txt
+# Python:  3.11+
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── GitHub data extraction (Phase 1) ─────────────────────────────────────────
+requests>=2.31.0            # HTTP client for GitHub REST API
+PyGithub>=2.1.1             # Optional: richer GitHub SDK
+
+# ── Environment and configuration ────────────────────────────────────────────
+python-dotenv>=1.0.0        # Loads .env file into os.environ
+
+# ── Schema validation ─────────────────────────────────────────────────────────
+jsonschema>=4.21.0          # Validates AI output against PMBOK JSON schemas
+
+# ── LLM providers (Phase 3) — install at least one ───────────────────────────
+anthropic>=0.25.0           # Claude (Anthropic) — recommended
+openai>=1.30.0              # GPT-4o (OpenAI) — fallback
+
+# ── FastAPI server (api/main.py) ──────────────────────────────────────────────
+fastapi>=0.111.0            # REST API framework
+uvicorn[standard]>=0.29.0   # ASGI server (run with: uvicorn api.main:app)
+pydantic>=2.7.0             # Request/response validation (used by FastAPI)
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+pytest>=8.0.0               # Test runner
+pytest-mock>=3.14.0         # Mock/patch utilities
+responses>=0.25.0           # Mock HTTP calls (used in test_phase1.py)
+httpx>=0.27.0               # Required by FastAPI TestClient (test_api.py)
