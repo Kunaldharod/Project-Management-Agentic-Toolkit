@@ -1,0 +1,306 @@
+{
+  "name": "Agentic PMBOK Toolkit — Main Pipeline",
+  "nodes": [
+
+    {
+      "id": "node-trigger-cron",
+      "name": "⏰ Scheduled Trigger (every 6h)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [100, 300],
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 6 }]
+        }
+      }
+    },
+
+    {
+      "id": "node-trigger-webhook",
+      "name": "🔔 GitHub Push Webhook (optional)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [100, 460],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "github-push",
+        "responseMode": "onReceived",
+        "responseData": "{ \"status\": \"received\" }"
+      },
+      "notes": "Configure this URL in GitHub repo Settings > Webhooks. Trigger on: push, pull_request, issues."
+    },
+
+    {
+      "id": "node-merge-triggers",
+      "name": "🔀 Merge Triggers",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [320, 360],
+      "parameters": { "mode": "passThrough", "output": "input1" }
+    },
+
+    {
+      "id": "node-set-config",
+      "name": "⚙️ Set Config",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3,
+      "position": [520, 360],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "cfg-repo",         "name": "github_repo",    "value": "={{ $env.GITHUB_REPO }}",    "type": "string" },
+            { "id": "cfg-commits",      "name": "commit_limit",   "value": "50",                         "type": "number" },
+            { "id": "cfg-days",         "name": "issue_days",     "value": "7",                          "type": "number" },
+            { "id": "cfg-provider",     "name": "kanban_provider","value": "={{ $env.KANBAN_PROVIDER }}", "type": "string" },
+            { "id": "cfg-sprint",       "name": "current_sprint", "value": "={{ $env.CURRENT_SPRINT }}",  "type": "string" },
+            { "id": "cfg-sprint-start", "name": "sprint_start",   "value": "={{ $env.SPRINT_START_DATE }}","type": "string" },
+            { "id": "cfg-sprint-end",   "name": "sprint_end",     "value": "={{ $env.SPRINT_END_DATE }}", "type": "string" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "node-git-extract",
+      "name": "🐍 git_extractor.py",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [740, 360],
+      "parameters": {
+        "command": "cd /home/node && python src/git_extractor.py --repo {{ $json.github_repo }} --commits {{ $json.commit_limit }} --days {{ $json.issue_days }} --save-snapshot"
+      },
+      "notes": "Runs git_extractor.py. Output (stdout) is the structured snapshot text sent to the AI agent. Errors go to stderr and are captured by the Error Handler."
+    },
+
+    {
+      "id": "node-load-artifacts",
+      "name": "📂 Load Current PMBOK Artifacts",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [740, 220],
+      "parameters": {
+        "operation": "read",
+        "fileName": "/home/node/artifacts/risk_register.json"
+      },
+      "notes": "Reads the current risk register so the agent can check for existing risks and increment IDs correctly."
+    },
+
+    {
+      "id": "node-load-velocity",
+      "name": "📂 Load Velocity Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [740, 140],
+      "parameters": {
+        "operation": "read",
+        "fileName": "/home/node/artifacts/velocity_log.json"
+      }
+    },
+
+    {
+      "id": "node-merge-context",
+      "name": "🔀 Merge Git + Artifact Context",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2.1,
+      "position": [960, 260],
+      "parameters": { "mode": "combine", "combinationMode": "mergeByPosition" }
+    },
+
+    {
+      "id": "node-ai-agent",
+      "name": "🧠 AI Agent (PMBOK Scrum Master)",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [1180, 260],
+      "parameters": {
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "=You are now processing a new repository snapshot. Today's date is {{ $now.format('YYYY-MM-DD') }}.\n\nCurrent Sprint: {{ $('⚙️ Set Config').item.json.current_sprint }}\nSprint Window: {{ $('⚙️ Set Config').item.json.sprint_start }} to {{ $('⚙️ Set Config').item.json.sprint_end }}\n\n--- CURRENT RISK REGISTER (check before creating new risks) ---\n{{ $('📂 Load Current PMBOK Artifacts').item.json.data }}\n\n--- CURRENT VELOCITY LOG (last 3 sprints) ---\n{{ $('📂 Load Velocity Log').item.json.data }}\n\n--- GIT REPOSITORY SNAPSHOT ---\n{{ $('🐍 git_extractor.py').item.json.stdout }}\n\nAnalyse the snapshot. Apply your detection rules. Produce the correct output type (A, B, C, or D).",
+        "systemMessage": "={{ $('📂 Load System Prompt').item.json.data }}",
+        "options": {
+          "maxIterations": 5,
+          "returnIntermediateSteps": false
+        }
+      }
+    },
+
+    {
+      "id": "node-load-prompt",
+      "name": "📂 Load System Prompt",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [960, 120],
+      "parameters": {
+        "operation": "read",
+        "fileName": "/home/node/prompts/agent_system_prompt.md"
+      },
+      "notes": "Loads the system prompt from disk so it can be versioned in Git independently of the n8n workflow."
+    },
+
+    {
+      "id": "node-parse-output",
+      "name": "🔍 Parse Agent Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1400, 260],
+      "parameters": {
+        "jsCode": "// Agent output is in items[0].json.output\nconst raw = items[0].json.output || '';\n\n// Strip any accidental markdown fences the LLM may add\nconst cleaned = raw\n  .replace(/```json\\s*/gi, '')\n  .replace(/```\\s*/g, '')\n  .trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(cleaned);\n} catch (e) {\n  // If JSON parse fails, return an error payload for the error branch\n  return [{ json: { parse_error: true, raw_output: raw, error: e.message } }];\n}\n\n// Determine output type\nlet output_type = 'UNKNOWN';\nif (parsed.action === 'NO_ACTION')         output_type = 'NO_ACTION';\nelse if (parsed.risk_id)                   output_type = 'RISK';\nelse if (parsed.sprint_id)                 output_type = 'VELOCITY';\nelse if (parsed.id && parsed.id.startsWith('SH-')) output_type = 'STAKEHOLDER';\n\nreturn [{ json: { ...parsed, _output_type: output_type, _parsed_at: new Date().toISOString() } }];\n"
+      }
+    },
+
+    {
+      "id": "node-route",
+      "name": "🔀 Route by Output Type",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1620, 260],
+      "parameters": {
+        "mode": "expression",
+        "output": "={{ $json._output_type }}",
+        "options": {
+          "fallbackOutput": "extra"
+        },
+        "rules": {
+          "rules": [
+            { "outputKey": "RISK",        "value": "RISK" },
+            { "outputKey": "VELOCITY",    "value": "VELOCITY" },
+            { "outputKey": "STAKEHOLDER", "value": "STAKEHOLDER" },
+            { "outputKey": "NO_ACTION",   "value": "NO_ACTION" }
+          ]
+        }
+      }
+    },
+
+    {
+      "id": "node-validate-risk",
+      "name": "✅ Validate Risk Schema",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [1840, 160],
+      "parameters": {
+        "command": "echo '{{ JSON.stringify($json) }}' | python /home/node/src/kanban_connector.py --provider {{ $('⚙️ Set Config').item.json.kanban_provider }} --stdin --dry-run"
+      },
+      "notes": "Dry-run validates the JSON payload against PMBOK schema before writing anything."
+    },
+
+    {
+      "id": "node-write-risk",
+      "name": "💾 Update risk_register.json",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2060, 80],
+      "parameters": {
+        "jsCode": "// Read existing register, upsert the new/updated risk entry\nconst fs = require('fs');\nconst path = '/home/node/artifacts/risk_register.json';\nconst existing = JSON.parse(fs.readFileSync(path, 'utf8'));\nconst newRisk = items[0].json;\n\n// Remove internal agent fields\ndelete newRisk._output_type;\ndelete newRisk._parsed_at;\n\nconst idx = existing.risks.findIndex(r => r.risk_id === newRisk.risk_id);\nif (idx >= 0) {\n  existing.risks[idx] = { ...existing.risks[idx], ...newRisk };\n} else {\n  existing.risks.push(newRisk);\n}\nexisting.last_updated = new Date().toISOString().split('T')[0];\n\nfs.writeFileSync(path, JSON.stringify(existing, null, 2));\nreturn [{ json: { success: true, action: idx >= 0 ? 'updated' : 'created', risk_id: newRisk.risk_id } }];\n"
+      }
+    },
+
+    {
+      "id": "node-push-kanban",
+      "name": "📋 kanban_connector.py",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [2060, 220],
+      "parameters": {
+        "command": "echo '{{ JSON.stringify($('🔍 Parse Agent Output').item.json) }}' | python /home/node/src/kanban_connector.py --provider {{ $('⚙️ Set Config').item.json.kanban_provider }} --stdin"
+      }
+    },
+
+    {
+      "id": "node-write-velocity",
+      "name": "💾 Update velocity_log.json",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, 320],
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = '/home/node/artifacts/velocity_log.json';\nconst existing = JSON.parse(fs.readFileSync(path, 'utf8'));\nconst newSprint = items[0].json;\n\ndelete newSprint._output_type;\ndelete newSprint._parsed_at;\n\nconst idx = existing.sprints.findIndex(s => s.sprint_id === newSprint.sprint_id);\nif (idx >= 0) {\n  existing.sprints[idx] = { ...existing.sprints[idx], ...newSprint };\n} else {\n  existing.sprints.push(newSprint);\n}\nexisting.last_updated = new Date().toISOString().split('T')[0];\n\nfs.writeFileSync(path, JSON.stringify(existing, null, 2));\nreturn [{ json: { success: true, sprint_id: newSprint.sprint_id } }];\n"
+      }
+    },
+
+    {
+      "id": "node-write-stakeholder",
+      "name": "💾 Update stakeholder_map.json",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, 420],
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = '/home/node/artifacts/stakeholder_map.json';\nconst existing = fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : { project_id: 'PROJ-001', version: '1.0', last_updated: '', stakeholders: [] };\nconst newSH = items[0].json;\n\ndelete newSH._output_type;\ndelete newSH._parsed_at;\n\nconst idx = existing.stakeholders.findIndex(s => s.id === newSH.id);\nif (idx >= 0) {\n  existing.stakeholders[idx] = { ...existing.stakeholders[idx], ...newSH };\n} else {\n  existing.stakeholders.push(newSH);\n}\nexisting.last_updated = new Date().toISOString().split('T')[0];\n\nfs.writeFileSync(path, JSON.stringify(existing, null, 2));\nreturn [{ json: { success: true, stakeholder_id: newSH.id } }];\n"
+      }
+    },
+
+    {
+      "id": "node-no-action-log",
+      "name": "📝 Log No-Action",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1840, 520],
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst entry = { timestamp: new Date().toISOString(), ...items[0].json };\nconst logPath = '/home/node/artifacts/no_action.log.jsonl';\nfs.appendFileSync(logPath, JSON.stringify(entry) + '\\n');\nreturn [{ json: { logged: true, ...entry } }];\n"
+      }
+    },
+
+    {
+      "id": "node-slack-notify",
+      "name": "💬 Slack Notification (optional)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.1,
+      "position": [2280, 160],
+      "parameters": {
+        "operation": "post",
+        "channel": "={{ $env.SLACK_CHANNEL_ID }}",
+        "text": "=🤖 *PMBOK Agent Alert* — `{{ $('🔍 Parse Agent Output').item.json.risk_id || $('🔍 Parse Agent Output').item.json.sprint_id }}`\n\n*{{ $('🔍 Parse Agent Output').item.json.title || 'Velocity update' }}*\nProbability: {{ $('🔍 Parse Agent Output').item.json.probability || 'N/A' }} | Impact: {{ $('🔍 Parse Agent Output').item.json.impact_score || 'N/A' }}/10\n\n{{ $('🔍 Parse Agent Output').item.json.mitigation || $('🔍 Parse Agent Output').item.json.summary || '' }}",
+        "otherOptions": {}
+      },
+      "credentials": { "slackApi": { "id": "slack-creds", "name": "Slack API" } },
+      "notes": "Optional. Enable by connecting Slack credentials in n8n."
+    },
+
+    {
+      "id": "node-error-handler",
+      "name": "🚨 Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1620, 460],
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst error = { timestamp: new Date().toISOString(), node: $input.item?.pairedItem?.node || 'unknown', error: items[0].json };\nfs.appendFileSync('/home/node/logs/pipeline_errors.jsonl', JSON.stringify(error) + '\\n');\nconsole.error('Pipeline error:', JSON.stringify(error));\nreturn [{ json: error }];\n"
+      }
+    }
+  ],
+
+  "connections": {
+    "⏰ Scheduled Trigger (every 6h)":    { "main": [[{ "node": "🔀 Merge Triggers", "type": "main", "index": 0 }]] },
+    "🔔 GitHub Push Webhook (optional)":  { "main": [[{ "node": "🔀 Merge Triggers", "type": "main", "index": 1 }]] },
+    "🔀 Merge Triggers":                  { "main": [[{ "node": "⚙️ Set Config",     "type": "main", "index": 0 }]] },
+    "⚙️ Set Config":                      { "main": [[{ "node": "🐍 git_extractor.py",                   "type": "main", "index": 0 },
+                                                      { "node": "📂 Load Current PMBOK Artifacts",       "type": "main", "index": 0 },
+                                                      { "node": "📂 Load Velocity Log",                  "type": "main", "index": 0 },
+                                                      { "node": "📂 Load System Prompt",                 "type": "main", "index": 0 }]] },
+    "🐍 git_extractor.py":                { "main": [[{ "node": "🔀 Merge Git + Artifact Context", "type": "main", "index": 0 }]] },
+    "📂 Load Current PMBOK Artifacts":    { "main": [[{ "node": "🔀 Merge Git + Artifact Context", "type": "main", "index": 1 }]] },
+    "📂 Load Velocity Log":               { "main": [[{ "node": "🧠 AI Agent (PMBOK Scrum Master)", "type": "main", "index": 0 }]] },
+    "📂 Load System Prompt":              { "main": [[{ "node": "🧠 AI Agent (PMBOK Scrum Master)", "type": "main", "index": 0 }]] },
+    "🔀 Merge Git + Artifact Context":    { "main": [[{ "node": "🧠 AI Agent (PMBOK Scrum Master)", "type": "main", "index": 0 }]] },
+    "🧠 AI Agent (PMBOK Scrum Master)":  { "main": [[{ "node": "🔍 Parse Agent Output",            "type": "main", "index": 0 }]] },
+    "🔍 Parse Agent Output":             { "main": [[{ "node": "🔀 Route by Output Type",           "type": "main", "index": 0 }]] },
+    "🔀 Route by Output Type": {
+      "main": [
+        [{ "node": "✅ Validate Risk Schema",    "type": "main", "index": 0 }],
+        [{ "node": "💾 Update velocity_log.json",  "type": "main", "index": 0 }],
+        [{ "node": "💾 Update stakeholder_map.json","type": "main", "index": 0 }],
+        [{ "node": "📝 Log No-Action",             "type": "main", "index": 0 }]
+      ]
+    },
+    "✅ Validate Risk Schema":            { "main": [[{ "node": "💾 Update risk_register.json",  "type": "main", "index": 0 },
+                                                      { "node": "📋 kanban_connector.py",        "type": "main", "index": 0 }]] },
+    "💾 Update risk_register.json":       { "main": [[{ "node": "💬 Slack Notification (optional)", "type": "main", "index": 0 }]] },
+    "📋 kanban_connector.py":             { "main": [[{ "node": "💬 Slack Notification (optional)", "type": "main", "index": 0 }]] }
+  },
+
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "node-error-handler"
+  },
+
+  "tags": ["pmbok", "agile", "ai-agent", "automation"]
+}

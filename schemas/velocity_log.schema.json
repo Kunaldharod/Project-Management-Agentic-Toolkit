@@ -1,0 +1,90 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Sprint Velocity Log",
+  "description": "Auto-generated sprint velocity summaries derived from commit activity and closed issues. One entry per sprint.",
+  "type": "object",
+  "required": ["project_id", "sprints"],
+  "additionalProperties": false,
+  "properties": {
+    "project_id": { "type": "string" },
+    "last_updated": { "type": "string" },
+
+    "sprints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["sprint_id", "start_date", "end_date", "metrics", "summary"],
+        "additionalProperties": false,
+        "properties": {
+          "sprint_id":   { "type": "string", "pattern": "^SP-[0-9]{2,4}$" },
+          "start_date":  { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "end_date":    { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "status":      { "type": "string", "enum": ["Active", "Complete", "Cancelled"] },
+
+          "metrics": {
+            "type": "object",
+            "required": ["commits_total", "prs_merged", "issues_closed", "issues_opened"],
+            "properties": {
+              "commits_total":   { "type": "integer" },
+              "prs_merged":      { "type": "integer" },
+              "prs_opened":      { "type": "integer" },
+              "issues_closed":   { "type": "integer" },
+              "issues_opened":   { "type": "integer" },
+              "story_points_completed": { "type": "integer" },
+              "story_points_planned":   { "type": "integer" },
+              "velocity_trend": {
+                "type": "string",
+                "enum": ["Accelerating", "Stable", "Decelerating", "Unknown"]
+              }
+            }
+          },
+
+          "top_contributors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "author":  { "type": "string" },
+                "commits": { "type": "integer" }
+              }
+            }
+          },
+
+          "blockers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["description", "impact", "status"],
+              "properties": {
+                "description": { "type": "string" },
+                "linked_issue": { "type": "string" },
+                "linked_risk":  { "type": "string", "pattern": "^RSK-[0-9]{3,6}$" },
+                "impact": { "type": "string", "enum": ["Low", "Medium", "High", "Critical"] },
+                "status": { "type": "string", "enum": ["Open", "Mitigating", "Resolved"] }
+              }
+            }
+          },
+
+          "achievements": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Notable completions or milestones this sprint"
+          },
+
+          "summary": {
+            "type": "string",
+            "minLength": 30,
+            "description": "Natural-language sprint summary written by the AI agent for stakeholder consumption"
+          },
+
+          "ai_confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "How confident the agent is in this summary (0=low, 1=high), based on data completeness"
+          }
+        }
+      }
+    }
+  }
+}

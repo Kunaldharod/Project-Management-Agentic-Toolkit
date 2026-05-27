@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PMBOK Stakeholder Map",
+  "description": "Stakeholder register and engagement assessment per PMBOK 7. Updated by AI agent based on PR authors, issue reporters, and commit patterns.",
+  "type": "object",
+  "required": ["project_id", "version", "last_updated", "stakeholders"],
+  "additionalProperties": false,
+  "properties": {
+    "project_id":   { "type": "string" },
+    "version":      { "type": "string" },
+    "last_updated": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+
+    "stakeholders": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "role", "influence", "interest", "current_engagement", "desired_engagement"],
+        "additionalProperties": false,
+        "properties": {
+          "id":     { "type": "string", "pattern": "^SH-[0-9]{3,6}$" },
+          "name":   { "type": "string" },
+          "role":   { "type": "string" },
+          "team":   { "type": "string" },
+          "github_handle": { "type": "string" },
+
+          "influence": { "type": "string", "enum": ["Low", "Medium", "High"] },
+          "interest":  { "type": "string", "enum": ["Low", "Medium", "High"] },
+
+          "current_engagement": {
+            "type": "string",
+            "enum": ["Unaware", "Resistant", "Neutral", "Supportive", "Leading"],
+            "description": "PMBOK stakeholder engagement level — current state"
+          },
+          "desired_engagement": {
+            "type": "string",
+            "enum": ["Unaware", "Resistant", "Neutral", "Supportive", "Leading"],
+            "description": "Target engagement level the PM is working towards"
+          },
+
+          "activity_signal": {
+            "type": "object",
+            "description": "Derived from git/issue activity by the AI agent",
+            "properties": {
+              "commits_last_sprint": { "type": "integer" },
+              "prs_opened":          { "type": "integer" },
+              "issues_reported":     { "type": "integer" },
+              "last_active":         { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" }
+            }
+          },
+
+          "communication_preference": { "type": "string" },
+          "notes":                     { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,50 @@
+# ── Secrets — NEVER commit these ─────────────────────────────────────────────
+.env
+*.env
+.env.local
+.env.production
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+
+# ── Logs and runtime output ───────────────────────────────────────────────────
+logs/
+*.log
+*.jsonl
+
+# ── Artifacts (live agent output — teams may choose to track or ignore) ───────
+# Uncomment the lines below if you do NOT want to commit artifact files.
+# artifacts/risk_register.json
+# artifacts/velocity_log.json
+# artifacts/stakeholder_map.json
+
+# ── Node / dashboard ──────────────────────────────────────────────────────────
+node_modules/
+dashboard/node_modules/
+dashboard/dist/
+dashboard/.vite/
+
+# ── Testing and coverage ──────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# ── OS and editor ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

@@ -1,0 +1,117 @@
+{
+  "project_id": "PROJ-001",
+  "last_updated": "2026-05-22",
+  "sprints": [
+    {
+      "sprint_id": "SP-01",
+      "start_date": "2026-04-14",
+      "end_date": "2026-04-27",
+      "status": "Complete",
+      "metrics": {
+        "commits_total": 38,
+        "prs_merged": 7,
+        "prs_opened": 8,
+        "issues_closed": 12,
+        "issues_opened": 5,
+        "story_points_completed": 34,
+        "story_points_planned": 40,
+        "velocity_trend": "Stable"
+      },
+      "top_contributors": [
+        { "author": "Priya Sharma",  "commits": 14 },
+        { "author": "Arjun Mehta",  "commits": 12 },
+        { "author": "Kavya Nair",   "commits": 8  },
+        { "author": "Rohit Desai",  "commits": 4  }
+      ],
+      "blockers": [
+        {
+          "description": "GDAL library version conflict on CI server blocked 3 PRs for 2 days",
+          "linked_issue": "issue:72",
+          "impact": "Medium",
+          "status": "Resolved"
+        }
+      ],
+      "achievements": [
+        "Completed geospatial ingestion pipeline v1.0",
+        "Integrated Mapbox tile renderer",
+        "Achieved 78% unit test coverage on core modules"
+      ],
+      "summary": "Sprint 1 completed at 85% of planned velocity (34/40 points). The team delivered the geospatial ingestion pipeline and Mapbox integration on schedule. A GDAL version conflict on CI caused a 2-day delay mid-sprint but was resolved without scope changes. Velocity is stable and the team is well-positioned for Sprint 2.",
+      "ai_confidence": 0.91
+    },
+    {
+      "sprint_id": "SP-02",
+      "start_date": "2026-04-28",
+      "end_date": "2026-05-11",
+      "status": "Complete",
+      "metrics": {
+        "commits_total": 51,
+        "prs_merged": 9,
+        "prs_opened": 11,
+        "issues_closed": 15,
+        "issues_opened": 9,
+        "story_points_completed": 41,
+        "story_points_planned": 42,
+        "velocity_trend": "Accelerating"
+      },
+      "top_contributors": [
+        { "author": "Priya Sharma",  "commits": 18 },
+        { "author": "Arjun Mehta",  "commits": 16 },
+        { "author": "Kavya Nair",   "commits": 11 },
+        { "author": "Rohit Desai",  "commits": 6  }
+      ],
+      "blockers": [],
+      "achievements": [
+        "Drone trajectory calculation engine v1.0 shipped",
+        "REST API for flight path queries live on staging",
+        "Onboarded two new QA engineers"
+      ],
+      "summary": "Sprint 2 was the strongest sprint to date — 41/42 points completed (98% velocity). No blockers materialised and the team shipped the trajectory engine ahead of schedule. Commit frequency increased 34% over Sprint 1, indicating the team has hit its stride. Sprint 3 carries elevated technical risk following a revert of the altitude calculation algorithm.",
+      "ai_confidence": 0.95
+    },
+    {
+      "sprint_id": "SP-03",
+      "start_date": "2026-05-12",
+      "end_date": "2026-05-25",
+      "status": "Active",
+      "metrics": {
+        "commits_total": 29,
+        "prs_merged": 4,
+        "prs_opened": 6,
+        "issues_closed": 6,
+        "issues_opened": 9,
+        "story_points_completed": 18,
+        "story_points_planned": 44,
+        "velocity_trend": "Decelerating"
+      },
+      "top_contributors": [
+        { "author": "Priya Sharma",  "commits": 11 },
+        { "author": "Arjun Mehta",  "commits": 10 },
+        { "author": "Kavya Nair",   "commits": 5  },
+        { "author": "Rohit Desai",  "commits": 3  }
+      ],
+      "blockers": [
+        {
+          "description": "Memory leak in QGIS processing module causing test failures in CI — 4 PRs blocked",
+          "linked_issue": "issue:99",
+          "linked_risk": "RSK-001",
+          "impact": "High",
+          "status": "Mitigating"
+        },
+        {
+          "description": "Altitude calculation revert (PR#42) still under review — blocks all trajectory feature work",
+          "linked_issue": "pr:42",
+          "linked_risk": "RSK-002",
+          "impact": "Critical",
+          "status": "Open"
+        }
+      ],
+      "achievements": [
+        "QGIS plugin alpha released to internal testers",
+        "Memory profiling tooling integrated into CI pipeline"
+      ],
+      "summary": "Sprint 3 is trending significantly below target at the midpoint — 18/44 points (41%) with 6 days remaining. Two critical blockers are compounding: a memory leak in the QGIS module is blocking CI merges, and the altitude algorithm revert is halting all trajectory feature work. Immediate risk escalation to RSK-001 and RSK-002 is recommended. Velocity has decelerated sharply from Sprint 2's high of 98%.",
+      "ai_confidence": 0.83
+    }
+  ]
+}

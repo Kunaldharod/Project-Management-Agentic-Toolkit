@@ -1,0 +1,54 @@
+{
+  "project_id": "PROJ-001",
+  "last_updated": "2026-05-22",
+  "risks": [
+    {
+      "risk_id": "RSK-001",
+      "title": "Memory leak in QGIS trajectory processing module",
+      "category": "Technical",
+      "probability": "High",
+      "impact_score": 8,
+      "risk_score": 6.4,
+      "mitigation": "Profile memory allocation in processing loop using memory_profiler. Add ceiling threshold at 80% heap usage. Add regression test asserting memory release after each batch.",
+      "contingency": "Roll back to v1.2 trajectory engine if memory consumption exceeds 4GB on staging",
+      "status": "Mitigating",
+      "owner": "Priya Sharma",
+      "raised_from": "commit:abc12345",
+      "date": "2026-05-20",
+      "last_reviewed": "2026-05-22",
+      "tags": ["sprint-3", "qgis-module", "performance"]
+    },
+    {
+      "risk_id": "RSK-002",
+      "title": "Drone trajectory calculation diverges at altitude > 200m",
+      "category": "Technical",
+      "probability": "High",
+      "impact_score": 9,
+      "risk_score": 7.2,
+      "mitigation": "Revert PR#42 to stable algorithm. Engage aerospace consultant to review physics model. Add altitude boundary validation in pre-flight checks.",
+      "contingency": "Cap operational altitude at 150m until algorithm is validated by external review",
+      "status": "Open",
+      "owner": "Arjun Mehta",
+      "raised_from": "pr:42",
+      "date": "2026-05-18",
+      "last_reviewed": "2026-05-22",
+      "tags": ["sprint-3", "drone-module", "safety-critical"]
+    },
+    {
+      "risk_id": "RSK-003",
+      "title": "Single senior developer with domain knowledge of geospatial pipeline",
+      "category": "Resource",
+      "probability": "Medium",
+      "impact_score": 7,
+      "risk_score": 4.9,
+      "mitigation": "Schedule 2 knowledge transfer sessions in Sprint 4. Document geospatial pipeline architecture in Confluence. Cross-train one junior developer on the module.",
+      "contingency": "Engage external GIS consultant on retainer if key developer is unavailable for > 5 days",
+      "status": "Open",
+      "owner": "Project Manager",
+      "raised_from": "retrospective:sprint-2",
+      "date": "2026-05-10",
+      "last_reviewed": "2026-05-22",
+      "tags": ["resource", "knowledge-transfer"]
+    }
+  ]
+}
