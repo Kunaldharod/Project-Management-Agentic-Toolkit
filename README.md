@@ -279,6 +279,8 @@ The agent outputs strict JSON matching the schemas in `schemas/`. If the output 
 
 MIT
 
+---
+## Sample
 <img width="1366" height="1030" alt="screencapture-localhost-5173-2026-05-29-15_13_43" src="https://github.com/user-attachments/assets/2eb890fd-fe45-42d3-a369-4ea8e5ad4e31" />
 
 <img width="1366" height="2626" alt="screencapture-localhost-5173-2026-05-29-15_14_20" src="https://github.com/user-attachments/assets/f2ad1ee8-95c2-48d4-8590-08d0f1a70d58" />
